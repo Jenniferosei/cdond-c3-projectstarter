@@ -40,11 +40,11 @@ jobs:
           key: backend-build
 
     test-frontend:
-    docker:
+      docker:
       - image: circleci/node:16.13.0
     steps:
       # Checkout code from git
-      -checkout
+      - checkout
       # Restore from cache
       - restore_cache:
           keys: [frontend-build]
