@@ -56,7 +56,7 @@ jobs:
             cd frontend
             npm install
             npm run test
-            exit 1  
+              
   test-backend:
   # Docker image here
     docker:
@@ -75,8 +75,7 @@ jobs:
             cd backend
             npm install
             npm run test
-            exit 1                  
-
+                              
 workflows:
   default:
     jobs:
