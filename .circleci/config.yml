@@ -74,29 +74,22 @@ jobs:
     docker:
       - image: circleci/node:16.13.0
     steps:
-    # Checkout code from gitt
       - checkout
-      # Restore from cache
       - restore_cache:
           keys: [frontend-build]
-          # Your job code here
       - run:
           name: Scanning Frontend
           command: |
             cd frontend
             npm install
-            npm audit --audit-level=critical
-            
+            npm audit --audit-level=critical          
   scan-backend:
     docker:
       - image: circleci/node:16.13.0
     steps:
-    # Checkout code from gitt
       - checkout
-      # Restore from cache
       - restore_cache:
           keys: [backend-build]
-          # Your job code here
       - run:
           name: Scanning backend
           command: |
