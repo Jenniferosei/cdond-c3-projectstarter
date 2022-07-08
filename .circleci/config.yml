@@ -140,7 +140,6 @@ jobs:
               --tags project=cdond-c3-projectstarter \
               --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  
-      
       - run:
           name: Add back-end ip to ansible inventory
           command: |
@@ -152,8 +151,44 @@ jobs:
       - persist_to_workspace:
           root: ~/
           paths:
-            - project/.circleci/ansible/inventory.txt
-      - destroy_environment         
+            - project/.circleci/ansible/inventory.txt 
+      - destroy_environment 
+
+  configure-infrastructure:
+    docker:
+      # Docker image here that supports Ansible
+      - image: python:python:3.7-alpine3.11
+    steps:
+      # Checkout code from git
+      - checkout
+      # Add ssh keys with fingerprint
+      - add_ssh_keys:
+          fingerprints:
+            - 'f8:4a:25:fa:1c:03:21:14:45:7b:06:38:21:06:57:88'
+      # attach workspace
+      - run:
+          name: Install dependencies
+          command: |
+            # apk add --update ansible
+            apk add --update --no-cache tar gzip ansible aws-cli
+            - attach_workspace:
+                at: ~/ 
+            -restore_cache:
+               keys: [backend-build]    
+      - run:
+          name: Run Playbook and Configure server
+          command: |
+            cd .circleci/ansible
+            ansible-playbook -i inventory.txt configure-server.yml \
+            --key-file ~/ .ssh/id_rsa_f8:4a:25:fa:1c:03:21:14:45:7b:06:38:21:06:57:88
+
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - project/backend
+      - destroy_environment 
+
+              
 workflows:
   default:
     jobs:
