@@ -173,8 +173,8 @@ jobs:
             apk add --update --no-cache tar gzip ansible aws-cli
             - attach_workspace:
                 at: ~/ 
-            -restore_cache:
-               keys: [backend-build]    
+      - restore_cache:
+          keys: [backend-build]  
       - run:
           name: Run Playbook and Configure server
           command: |
