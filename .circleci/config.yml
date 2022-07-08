@@ -161,6 +161,8 @@ jobs:
     steps:
       # Checkout code from git
       - checkout
+      - restore_cache:
+          keys: [backend-build]
       # Add ssh keys with fingerprint
       - add_ssh_keys:
           fingerprints:
@@ -172,9 +174,7 @@ jobs:
             # apk add --update ansible
             apk add --update --no-cache tar gzip ansible aws-cli
             - attach_workspace:
-                at: ~/ 
-      - restore_cache:
-          keys: [backend-build]  
+                at: ~/   
       - run:
           name: Run Playbook and Configure server
           command: |
