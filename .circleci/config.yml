@@ -15,6 +15,7 @@ commands:
             aws cloudformation delete-stack --stack-name udapeople-backend-<< parameters.Workflow_ID >>
             aws s3 rm s3://udapeople-<<parameters.Workflow_ID>> --recursive
             aws cloudformation delete-stack --stack-name udapeople-frontend-<< parameters.Workflow_ID >> 
+
   install_awscli:
     description: Install AWS CLI
     steps:
@@ -35,6 +36,7 @@ commands:
             sudo apt install software-properties-common -y
             sudo add-apt-repository --yes --update ppa:ansible/ansible
             sudo apt install ansible -y
+
   revert_migrations:
     description: Reverting failed migration
     steps:
@@ -84,17 +86,14 @@ jobs:
       - save_cache:
           paths: [backend/node_modules]
           key: backend-build
+
   test-frontend:
-  # Docker image here
     docker:
       - image: circleci/node:16.13.0  
     steps:
-    # Checkout code from gitt
       - checkout
-      # Restore from cache
       - restore_cache:
           keys: [frontend-build]
-          # Your job code here
       - run:
           name: Run frontend test
           command: |
@@ -103,16 +102,12 @@ jobs:
             npm run test
               
   test-backend:
-  # Docker image here
     docker:
       - image: circleci/node:16.13.0  
     steps:
-    # Checkout code from gitt
       - checkout
-      # Restore from cache
       - restore_cache:
           keys: [backend-build]
-          # Your job code here
       - run:
           name: Run backend test
           command: |
@@ -134,6 +129,7 @@ jobs:
             npm install
             npm audit fix --audit-level=critical --force
             npm audit --audit-level=critical
+
   scan-backend:
     docker:
       - image: circleci/node:13.8.0
@@ -189,16 +185,13 @@ jobs:
 
   configure-infrastructure:
     docker:
-      # Docker image here that supports Ansible
        - image: cimg/base:stable
     steps:
-      # Checkout code from git
       - checkout
       - install_awscli
       - install_ansible
       - add_ssh_keys:
-          fingerprints:
-            ["f8:4a:25:fa:1c:03:21:14:45:7b:06:38:21:06:57:88"]
+          fingerprints: ["f8:4a:25:fa:1c:03:21:14:45:7b:06:38:21:06:57:88"]
       - attach_workspace:
           at: ~/
       - run:
