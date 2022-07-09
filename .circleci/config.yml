@@ -2,29 +2,29 @@ version: 2.1
 
 commands:
   destroy_environment:
-    description: Destroy back-end and front-end cloudformation stacks.
+    description: Destroy back-end and front-end stacks.
     parameters:
       Workflow_ID:
         type: string
         default: ${CIRCLE_WORKFLOW_ID:0:7}
     steps:
       - run:
-          name: Destroy environments
+          name: Delete stacks
           when: on_fail
           command: |
             aws cloudformation delete-stack --stack-name udapeople-backend-<< parameters.Workflow_ID >>
             aws s3 rm s3://udapeople-<<parameters.Workflow_ID>> --recursive
-            aws cloudformation delete-stack --stack-name udapeople-frontend-<< parameters.Workflow_ID >> 
-
+            aws cloudformation delete-stack --stack-name udapeople-frontend-<< parameters.Workflow_ID >>
+      
   install_awscli:
     description: Install AWS CLI
     steps:
-    - run:
-        name: Install AWS CLI
-        command: |
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          sudo ./aws/install
+      - run:
+          name: Install AWS CLI
+          command: |
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
+            sudo ./aws/install
 
   install_ansible:
     description: Install Ansible
@@ -50,12 +50,12 @@ commands:
               cd ~/project/backend
               npm install
               npm run migration:revert
-            fi                                
-         
+            fi
+
 jobs:
   build-frontend:
     docker:
-      - image: circleci/node:16.13.0
+      - image: circleci/node:13.8.0
     steps:
       - checkout
       - restore_cache:
@@ -72,7 +72,7 @@ jobs:
 
   build-backend:
     docker:
-      - image: circleci/node:16.13.0
+      - image: circleci/node:13.8.0
     steps:
       - checkout
       - restore_cache:
@@ -80,39 +80,40 @@ jobs:
       - run:
           name: Back-end build
           command: |
-             cd backend
-             npm install
-             npm run build
+              cd backend
+              npm install
+              npm run build
       - save_cache:
           paths: [backend/node_modules]
           key: backend-build
+
   test-frontend:
     docker:
-      - image: circleci/node:16.13.0  
+      - image: circleci/node:13.8.0
     steps:
       - checkout
       - restore_cache:
           keys: [frontend-build]
       - run:
-          name: Run frontend test
+          name: Unit test for frontend
           command: |
             cd frontend
             npm install
-            npm run test
-              
+            npm test
+
   test-backend:
     docker:
-      - image: circleci/node:16.13.0  
+      - image: circleci/node:13.8.0
     steps:
       - checkout
       - restore_cache:
           keys: [backend-build]
       - run:
-          name: Run backend test
+          name: Unit test for backend
           command: |
-            cd frontend
+            cd backend
             npm install
-            npm run test 
+            npm test
 
   scan-frontend:
     docker:
@@ -120,7 +121,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          keys: [frontend-scan]
+          keys: [frontend-build]
       - run:
           name: Scan for Frontend
           command: |
@@ -135,7 +136,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          keys: [backend-scan]
+          keys: [backend-build]
       - run:
           name: Scan for Backend
           command: |
@@ -157,34 +158,34 @@ jobs:
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/backend.yml \
-              --tags project=cdond-c3-projectstarter \
               --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}" \
+              --tags project=udapeople
       - run:
-          name: Ensure front-end infrastructure exist
+          name: Ensure front-end infrastructure exists
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/frontend.yml \
-              --tags project=cdond-c3-projectstarter \
               --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}" \
+              --tags project=udapeople 
       - run:
           name: Add back-end ip to ansible inventory
           command: |
             echo $(aws ec2 describe-instances \
-              --query 'Reservations[].Instances[].PublicIpAddress' \
+              --query 'Reservations[*].Instances[*].PublicIpAddress' \
               --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --output text) >> .circleci/ansible/inventory.txt
             cat .circleci/ansible/inventory.txt
       - persist_to_workspace:
           root: ~/
           paths:
-            - project/.circleci/ansible/inventory.txt 
+            - project/.circleci/ansible/inventory.txt
       - destroy_environment 
 
   configure-infrastructure:
     docker:
-       - image: cimg/base:stable
+      - image: cimg/base:stable
     steps:
       - checkout
       - install_awscli
@@ -200,6 +201,7 @@ jobs:
             cat inventory.txt
             ansible-playbook -i inventory.txt configure-server.yml
       - destroy_environment
+
   run-migrations:
     docker:
       - image: python:3.10-alpine3.16
@@ -229,7 +231,7 @@ jobs:
             fi
       - destroy_environment
       - revert_migrations
-              
+
 workflows:
   default:
     jobs:
@@ -251,7 +253,5 @@ workflows:
       - configure-infrastructure:
           requires: [deploy-infrastructure]
       - run-migrations:
-          requires: [configure-infrastructure]    
-                               
-
-  
+          requires: [configure-infrastructure]
+     
