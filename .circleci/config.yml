@@ -317,9 +317,9 @@ jobs:
       - revert_migrations
 
   smoke-test:
-  docker:
-    - image: python:3.10-alpine3.16
-  steps:
+    docker:
+      - image: python:3.10-alpine3.16
+    steps:
     - checkout
     - install_awscli
     - install_nodejs
