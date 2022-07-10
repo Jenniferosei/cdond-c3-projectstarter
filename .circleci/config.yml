@@ -268,6 +268,39 @@ jobs:
       - destroy_environment
       - revert_migrations
 
+  deploy-backend:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints: ["f8:4a:25:fa:1c:03:21:14:45:7b:06:38:21:06:57:88"]
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Install dependencies
+          command: |
+            apk add --update --no-cache tar gzip nodejs npm aws-cli ansible     
+      - run:
+          name: Deploy backend
+          command: |
+            cd backend
+            npm install
+            npm run build
+            cd ..
+            tar -C backend -czvf artifact.tar.gz .
+            tree -afC /root/project/.circleci -I *node_modules*
+            mkdir -p ~/project/.circleci/ansible/roles/deploy/files/
+            mv artifact.tar.gz .circleci/ansible/roles/deploy/files/artifact.tar.gz
+            cd .circleci/ansible
+            echo "Contents  of the inventory.txt file is -------$(tail -1 inventory.txt)"
+            cat inventory.txt
+            ansible-playbook -i inventory.txt deploy-backend.yml
+            --key-file ~/.ssh/id_rsa_f84a25fa1c032114457b063821065788 
+      - destroy_environment
+      - revert_migrations
+    
+
 workflows:
   default:
     jobs:
@@ -292,3 +325,5 @@ workflows:
           requires: [configure-infrastructure]
       - deploy-frontend:
           requires: [run-migrations]
+      - deploy-backend:
+          requires: [run-migrations]    
