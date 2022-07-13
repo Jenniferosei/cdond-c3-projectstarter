@@ -48,6 +48,10 @@ commands:
 
   revert_migrations:
     description: Reverting failed migration
+    parameters:
+      Workflow_ID:
+        type: string
+        default: ${CIRCLE_WORKFLOW_ID:0:7}
     steps:
       - run:
           name: Revert migrations
@@ -282,9 +286,9 @@ jobs:
       - image: cimg/base:stable
     steps:
       - checkout
-      - install_awscli
-      - install_ansible
-      - install_nodejs
+      - install-awscli
+      - install-ansible
+      - install-nodejs
       - add_ssh_keys:
           fingerprints: ["f8:4a:25:fa:1c:03:21:14:45:7b:06:38:21:06:57:88"]
       - attach_workspace:
@@ -314,7 +318,7 @@ jobs:
             cat inventory.txt
             ansible-playbook -i inventory.txt deploy-backend.yml
       - destroy_environment
-      - revert_migrations    
+      - revert_migrations  
 
   smoke-test:
     docker:
