@@ -46,8 +46,8 @@ commands:
             curl -fsSL https://deb.nodesource.com/setup_13.x | sudo -E bash -
             sudo apt install -y nodejs          
 
-  revert_migrations:
-    description: Reverting failed migration
+    revert-migrations:
+    description: Revert the last migration
     parameters:
       Workflow_ID:
         type: string
@@ -57,7 +57,8 @@ commands:
           name: Revert migrations
           when: on_fail
           command: |
-            SUCCESS=$(curl --insecure  https://kvdb.io/2HwnyNSth6t8DZyFA5g13j/migration_${CIRCLE_WORKFLOW_ID:0:7}
+            SUCCESS=$(curl --insecure  https://kvdb.io/2HwnyNSth6t8DZyFA5g13j/migration_<< parameters.Workflow_ID >>)
+            # Logic for reverting the database state
             if (( $SUCCESS == 1 ));
             then
               cd ~/project/backend
