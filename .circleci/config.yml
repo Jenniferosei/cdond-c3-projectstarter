@@ -269,7 +269,6 @@ jobs:
           name: Run migrations
           command: |
             cd backend
-            # npm install --force
             npm install --force
             npm run build
             npm run migrations >> migrations_dump.txt
@@ -284,6 +283,8 @@ jobs:
             fi
       - destroy_environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
+      - revert_migrations:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}    
 
   deploy-frontend:
     docker:
