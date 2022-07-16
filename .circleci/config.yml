@@ -366,7 +366,7 @@ jobs:
             fi
       - destroy_environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
-        - revert_migrations:
+      - revert_migrations:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 
    cloudfront-update:
