@@ -38,3 +38,4 @@
 
   roles:
     - deploy
+    - node-exporter
