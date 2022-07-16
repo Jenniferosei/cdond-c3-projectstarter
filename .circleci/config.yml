@@ -61,20 +61,21 @@ commands:
   revert_migrations:
     description: Revert the last migration
     parameters:
-      Workflow_ID:
+       workflow_id:
         type: string
-        default: ${CIRCLE_WORKFLOW_ID:0:7}
+        # default: ${CIRCLE_WORKFLOW_ID:0:7}
     steps:
       - run:
           name: Revert migrations
           when: on_fail
           command: |
-            SUCCESS=$(curl --insecure  https://kvdb.io/2HwnyNSth6t8DZyFA5g13j/migration_<< parameters.Workflow_ID >>)
+            export SUCCESS=$(curl --insecure  https://kvdb.io/2HwnyNSth6t8DZyFA5g13j/migration_<< parameters.workflow_id >>)
             # Logic for reverting the database state
             if (( $SUCCESS == 1 ));
             then
               cd ~/project/backend
               npm install
+              npm run build
               npm run migration:revert
             fi
 
@@ -125,7 +126,10 @@ jobs:
           command: |
             cd frontend
             npm install
-            npm test
+            npm run test
+      - save_cache:
+          paths: [frontend/node_modules]
+          key: frontend-build      
 
   test-backend:
     docker:
@@ -139,7 +143,10 @@ jobs:
           command: |
             cd backend
             npm install
-            npm test
+            npm run test
+      - save_cache:
+          paths: [backend/node_modules]
+          key: backend-build      
 
   scan-frontend:
     docker:
@@ -147,14 +154,15 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          keys: [frontend-build]
+         keys: [scan-frontend]
       - run:
           name: Scan for Frontend
           command: |
             cd frontend
             npm install
-            npm audit fix --audit-level=critical --force
-            npm audit --audit-level=critical
+            npm audit fix --audit-level=critical
+            # npm audit fix --audit-level=critical --force
+            # npm audit --audit-level=critical
 
   scan-backend:
     docker:
@@ -162,7 +170,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          keys: [backend-build]
+          keys: [scan-backend]
       - run:
           name: Scan for Backend
           command: |
@@ -176,41 +184,44 @@ jobs:
       - image: amazon/aws-cli
     steps:
       - checkout
-      - run: yum install -y tar gzip
+      - run:
+          name: Install tar utility
+          command: |
+            yum install -y tar gzip
       - run:
           name: Ensure back-end infrastructure exists
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/backend.yml \
+              --tags Project=udapeople \
               --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}" \
-              --tags project=udapeople
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"
       - run:
-          name: Ensure front-end infrastructure exists
+          name: Ensure front-end infrastructure exist
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/frontend.yml \
+              --tags project=udapeople \
               --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}" \
-              --tags project=udapeople 
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"
       - run:
           name: Add back-end ip to ansible inventory
           command: |
-            echo $(aws ec2 describe-instances \
-              --query 'Reservations[*].Instances[*].PublicIpAddress' \
-              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --output text) >> .circleci/ansible/inventory.txt
-            cat .circleci/ansible/inventory.txt
+            aws ec2 describe-instances \
+            --query 'Reservations[*].Instances[*].PublicIpAddress' \
+            --filters "Name=tag:Project,Values=udapeople" \
+            --output text >> ~/project/.circleci/ansible/inventory.txt
+            cat ~/project/.circleci/ansible/inventory.txt
       - persist_to_workspace:
           root: ~/
           paths:
-            - project/.circleci/ansible/inventory.txt
-      - destroy_environment:
+            - project/.circleci/ansible/*
+      - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 
   configure-infrastructure:
     docker:
-      - image: cimg/base:stable
+      - image: python:3.7-alpine3.11
     steps:
       - checkout
       # - install_awscli
@@ -327,8 +338,9 @@ jobs:
             echo "Contents  of the inventory.txt file is -------"
             cat inventory.txt
             ansible-playbook -i inventory.txt deploy-backend.yml
-      - destroy_environment
-      - revert_migrations  
+      - revert_migrations:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7} 
+           
 
   smoke-test:
     docker:
