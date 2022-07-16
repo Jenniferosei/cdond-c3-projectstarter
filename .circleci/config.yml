@@ -364,7 +364,7 @@ jobs:
             else
               exit 0
             fi
-      - destroy-environment:
+      - destroy_environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
         - revert_migrations:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
@@ -395,7 +395,7 @@ jobs:
               --stack-name InitialStack \
               --parameter-overrides WORKFLOW_ID="${CIRCLE_WORKFLOW_ID:0:7}" \
               --tags project=udapeople
-      - destroy-environment:
+      - destroy_environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
       - revert_migrations:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}  
