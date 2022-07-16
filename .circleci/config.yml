@@ -270,7 +270,7 @@ jobs:
           command: |
             cd backend
             # npm install --force
-            npm install 
+            npm install --force
             npm run build
             npm run migrations >> migrations_dump.txt
             ls -al
