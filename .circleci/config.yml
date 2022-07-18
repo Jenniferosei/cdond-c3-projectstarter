@@ -1,7 +1,7 @@
 version: 2.1
 
 commands:
-  destroy_environment:
+  destroy-environment:
     description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
     parameters:
       workflow_id:
@@ -202,9 +202,9 @@ jobs:
           root: ~/
           paths:
             - project/.circleci/ansible/*
-      - destroy_environment:
+      - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
-
+ 
   configure-infrastructure:
     docker:
       - image: python:3.7-alpine3.11
@@ -216,13 +216,6 @@ jobs:
           fingerprints: ["f8:4a:25:fa:1c:03:21:14:45:7b:06:38:21:06:57:88"]
       - attach_workspace:
           at: ~/
-      # - run:
-      #     name: Configure server & run Ansible playbook
-      #     command: |
-      #       cd .circleci/ansible
-      #       cat inventory.txt
-      #       ansible-playbook -i inventory.txt configure-server.yml
-      # - destroy_environment
       - run:
           name: Install Ansible
           command: |
@@ -233,7 +226,7 @@ jobs:
           command: |
             cd .circleci/ansible
             ansible-playbook -i inventory.txt configure-server.yml
-      - destroy_environment:
+      - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 
 
@@ -285,7 +278,7 @@ jobs:
             then
               curl https://kvdb.io/2HwnyNSth6t8DZyFA5g13j/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1'
             fi
-      - destroy_environment:
+      - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 
   deploy-frontend:
@@ -319,7 +312,7 @@ jobs:
             npm run build
             tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
             aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
-      - destroy_environment:
+      - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 
   deploy-backend:
@@ -391,37 +384,41 @@ jobs:
             else
               exit 0
             fi
-      - destroy_environment:
+      - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
       - revert_migrations:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 
   cloudfront-update:
     docker:
-      - image: cimg/base:stable
+      - image: python:3.7-alpine3.11
     steps:
       - checkout
-      - install_awscli
-      - install_nodejs
       - run:
-          name: Save Old Workflow ID to kvdb.io
+          name: Install dependencies
           command: |
-            export OLD_WORKFLOW_ID=$(aws cloudformation \
-                      list-exports --query "Exports[?Name==\`WorkflowID\`].Value" \
-                      --no-paginate --output text)
-            echo "Old Wokflow ID: $OLD_WORKFLOW_ID"
-            curl https://kvdb.io/2HwnyNSth6t8DZyFA5g13j/old_workflow_id -d "${OLD_WORKFLOW_ID}"
+            apk add --update --no-cache tar gzip nodejs npm curl
+            pip install awscli
       - run:
-          name: Update cloudfront distribution
+          name: Get cloudfront distribution
+          command: |
+            export WORKFLOW_ID=$(aws cloudformation \
+            list-exports --query "Exports[?Name==\`WORKFLOW_ID\`].Value" \
+            --no-paginate --output text)
+            curl https://kvdb.io/7hmTDYVHKY8heVdFvP313a/OLD_WORKFLOW_ID -d "$WORKFLOW_ID"
+            echo WORKFLOW_ID: "$WORKFLOW_ID"
+      - run:
+          name: "Udate cloudfront distribution"
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/cloudfront.yml \
-              --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID:0:7}" \
-              --stack-name InitialStack
-      - destroy_environment:
+              --stack-name InitialStack \
+              --parameter-overrides WORKFLOW_ID="${CIRCLE_WORKFLOW_ID:0:7}" \
+              --tags project=udapeople
+      - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
       - revert_migrations:
-          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}  
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 
   cleanup:
     docker:
