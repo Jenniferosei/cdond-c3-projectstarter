@@ -1,47 +1,107 @@
+# ---
+# - name: "Update packages"
+#   become: true
+#   apt:
+#     update_cache: yes
+
+# - name: "upgrade packages"
+#   become: true
+#   apt:
+#     upgrade: yes
+
+# - name: remove unused dependencies
+#   become: true
+#   apt:
+#     autoremove: yes
+
+# - name: "install dependencies."
+#   become: true
+#   apt:
+#     name: ["nodejs", "npm"]
+#     state: latest
+#     update_cache: yes
+
+# - name: "install pm2 package"
+#   become: true
+#   npm:
+#     name: pm2
+#     global: yes
+#     production: yes
+#     state: present
+
+# - name: "Creates directory"
+#   file:
+#     path: ~/web
+#     state: directory
+
+# - name: Extract backend files
+#   become: true
+#   unarchive:
+#     src: files/artifact.tar.gz
+#     dest: .
+
+# - name: Executing node app
+#   become: true
+#   shell: |
+#     pm2 stop all
+#     pm2 start npm -- start
+
 ---
-- name: "Update packages"
-  become: true
-  apt:
-    update_cache: yes
+  - name: "show remote environment"
+    shell: env
+  # - name: install rsync on the ansible controller
+  #   become: yes
+  #   connection: local
+  #   package:
+  #     name: rsync
+  #     state: present
+  
+  - name: "copy backend binaries"
+    become: yes
+    synchronize:
+      src: ../../backend/dist
+      dest: /home/ubuntu/uda_app
+      recursive: true
+  - name: "copy node_modules"
+    become: yes
+    synchronize:
+      src: ../../backend/node_modules
+      dest: /home/ubuntu/uda_app
+      recursive: true
+  - name: "delete anything that might already be running"
+    become: true
+    command: pm2 delete all
+    ignore_errors: true
+  - name: "start server"
+    become: true
+    command: pm2 start -f ./main.js
+    args:
+      chdir: /home/ubuntu/uda_app/dist
+    environment:
+     ENVIRONMENT: production
+     TYPEORM_CONNECTION: "{{ lookup('env', 'TYPEORM_CONNECTION') }}"
+     TYPEORM_MIGRATIONS_DIR: "./migrations"
+     TYPEORM_MIGRATIONS: "./migrations/*.js"
+     TYPEORM_ENTITIES: "./modules/domain/**/*.entity.js"
+     TYPEORM_HOST: "{{ lookup('env', 'TYPEORM_HOST') }}"
+     TYPEORM_PORT: "{{ lookup('env', 'TYPEORM_PORT') }}"
+     TYPEORM_USERNAME: "{{ lookup('env', 'TYPEORM_USERNAME') }}"
+     TYPEORM_PASSWORD: "{{ lookup('env', 'TYPEORM_PASSWORD') }}"
+     TYPEORM_DATABASE: "{{ lookup('env', 'TYPEORM_DATABASE') }}"
 
-- name: "upgrade packages"
-  become: true
-  apt:
-    upgrade: yes
 
-- name: remove unused dependencies
-  become: true
-  apt:
-    autoremove: yes
 
-- name: "install dependencies."
-  become: true
-  apt:
-    name: ["nodejs", "npm"]
-    state: latest
-    update_cache: yes
 
-- name: "install pm2 package"
-  become: true
-  npm:
-    name: pm2
-    global: yes
-    production: yes
-    state: present
 
-- name: "Creates directory"
-  file:
-    path: ~/web
-    state: directory
 
-- name: Extract backend files
-  become: true
-  unarchive:
-    src: files/artifact.tar.gz
-    dest: .
 
-- name: Executing node app
-  become: true
-  shell: |
-    pm2 stop all
-    pm2 start npm -- start
+
+
+
+
+
+
+
+
+
+
