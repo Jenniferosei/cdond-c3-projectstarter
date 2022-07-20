@@ -205,27 +205,53 @@ jobs:
       - destroy_environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 
+#   configure-infrastructure:
+#     docker:
+#       - image: python:3.7-alpine3.11
+#     steps:
+#       - checkout
+#       - add_ssh_keys:
+#           fingerprints: ["ec:c1:8f:4d:d7:9f:e8:1a:f4:73:e4:08:78:cf:7d:85"]
+#       - attach_workspace:
+#           at: .
+#       - run:
+#           name: Install Ansible
+#           command: |
+#             apk add --update ansible
+#             pip install awscli
+#       - run:
+#           name: Configure server
+#           command: |
+#             cd .circleci/ansible
+#             ansible-playbook -i inventory.txt configure-server.yml -vvv
+#       - destroy_environment:
+#           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
   configure-infrastructure:
     docker:
       - image: python:3.7-alpine3.11
     steps:
       - checkout
-      - add_ssh_keys:
+      - add_ssh_keys: 
           fingerprints: ["ec:c1:8f:4d:d7:9f:e8:1a:f4:73:e4:08:78:cf:7d:85"]
       - attach_workspace:
           at: .
+      - run: 
+          name: View content of inventory.txt
+          command: cat .circleci/ansible/inventory.txt 
       - run:
-          name: Install Ansible
+          name: Install dependencies
           command: |
+            # Install dependencies needed for your playbook
             apk add --update ansible
             pip install awscli
+            aws --version
       - run:
           name: Configure server
           command: |
             cd .circleci/ansible
-            ansible-playbook -i inventory.txt configure-server.yml -c paramiko -vvv
-      - destroy_environment:
-          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
+            ansible-playbook -i inventory.txt configure-server.yml 
+      - destroy-environment:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}  
 
 
   # run-migrations:
