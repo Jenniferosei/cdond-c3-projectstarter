@@ -17,12 +17,12 @@
     #       timeout: 300
     #     delegate_to: localhost
 
-    - name: "install python for Ansible."
-      become: yes
-      apt:
-        name: python3
-        state: latest
-        update_cache: yes
+    # - name: "install python for Ansible."
+    #   become: yes
+    #   apt:
+    #     name: python3
+    #     state: latest
+    #     update_cache: yes
 
   environment:
     - TYPEORM_CONNECTION: "{{ lookup('env', 'TYPEORM_CONNECTION')}}"
@@ -37,3 +37,4 @@
 
   roles:
     - configure-server
+    - node
