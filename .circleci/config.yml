@@ -207,7 +207,7 @@ jobs:
 
   configure-infrastructure:
     docker:
-      - image: python:3.7-alpine3.11
+      - image:  python:3.10.5-alpine3.16
     steps:
       - checkout
       - add_ssh_keys: 
@@ -221,7 +221,7 @@ jobs:
           name: Install dependencies
           command: |
             # Install dependencies needed for your playbook
-            apk add --update ansible
+            apk add --update ansible openssh
             pip install awscli
             aws --version
       - run:
@@ -546,17 +546,17 @@ workflows:
           filters:
             branches:
               only: [master]
-      - configure-infrastructure:
-          requires: [deploy-infrastructure]
-      - run-migrations:
-          requires: [configure-infrastructure]
-      - deploy-frontend:
-          requires: [run-migrations]
-      - deploy-backend:
-          requires: [run-migrations] 
-      - smoke-test:
-          requires: [deploy-backend, deploy-frontend]
-      - cloudfront-update:
-          requires: [smoke-test] 
-      - cleanup:
-          requires: [cloudfront-update]              
+#       - configure-infrastructure:
+#           requires: [deploy-infrastructure]
+#       - run-migrations:
+#           requires: [configure-infrastructure]
+#       - deploy-frontend:
+#           requires: [run-migrations]
+#       - deploy-backend:
+#           requires: [run-migrations] 
+#       - smoke-test:
+#           requires: [deploy-backend, deploy-frontend]
+#       - cloudfront-update:
+#           requires: [smoke-test] 
+#       - cleanup:
+#           requires: [cloudfront-update]              
